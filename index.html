@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Net Worth Tracker – Mock Preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    
+
+    <main class="content">
+      <section class="card" id="boot-status">
+        <h2>Status</h2>
+        <p>Loading report… If this message remains visible after a refresh, JavaScript may not be executing.</p>
+      </section>
+      <section class="card" id="summary">
+        <h2 class="center">Overview</h2>
+        <div class="grid grid-2" id="overview-top"></div>
+      </section>
+
+      <section class="card" id="breakdown">
+        <div class="title-inline center">
+          <h2 class="center no-margin">Asset Breakdown by Category</h2>
+        </div>
+        <div class="table" id="breakdown-table"></div>
+      </section>
+
+      <section class="card" id="holdings">
+        <h2 class="center">Detailed Holdings</h2>
+        <div class="two-col">
+          <div>
+            <h3 class="center">Brokerage Holdings</h3>
+            <div class="table" id="ibkr-table"></div>
+          </div>
+          <div>
+            <h3 class="center">Cryptocurrency</h3>
+            <div class="table" id="crypto-table"></div>
+            <div class="divider soft"></div>
+            <h3 class="center">Cash</h3>
+            <div class="table" id="revolut-table"></div>
+          </div>
+        </div>
+        <div class="divider soft"></div>
+        <div>
+          <h3 class="center">Other Assets</h3>
+          <div class="table" id="otherassets-table"></div>
+        </div>
+      </section>
+
+      <section class="card" id="info-input">
+        <h2 class="center">Information Input</h2>
+        <div class="form-grid">
+          <div class="form-group">
+            <h3 class="center">Update Cash</h3>
+            <div class="row-inputs">
+              <label>EUR <input id="in-cash-eur" class="input" type="number" step="0.01" /></label>
+              <label>RON <input id="in-cash-ron" class="input" type="number" step="0.01" /></label>
+              <label>CHF <input id="in-cash-chf" class="input" type="number" step="0.01" /></label>
+            </div>
+            <button id="btn-cash-apply" class="btn">Apply Cash</button>
+          </div>
+          <div class="form-group">
+            <h3 class="center">Add Stock</h3>
+            <div class="row-inputs">
+              <input id="in-stock-ticker" class="input" placeholder="Ticker (e.g., AAPL)" />
+              <input id="in-stock-label" class="input" placeholder="Label (e.g., Tech)" />
+              <select id="in-stock-curr" class="input">
+                <option value="EUR">EUR</option>
+                <option value="USD">USD</option>
+              </select>
+              <input id="in-stock-amt" class="input" type="number" step="0.01" placeholder="EUR Value" />
+            </div>
+            <button id="btn-add-stock" class="btn">+ Add Stock</button>
+          </div>
+          <div class="form-group">
+            <h3 class="center">Add Crypto</h3>
+            <div class="row-inputs">
+              <input id="in-crypto-coin" class="input" placeholder="Coin (BTC/ETH)" />
+              <input id="in-crypto-amt" class="input" type="number" step="0.0001" placeholder="Amount" />
+            </div>
+            <button id="btn-add-crypto" class="btn">+ Add Crypto</button>
+          </div>
+          <div class="form-group">
+            <h3 class="center">Add Other Asset</h3>
+            <div class="row-inputs">
+              <input id="in-other-name" class="input" placeholder="Name" />
+              <select id="in-other-curr" class="input">
+                <option value="EUR">EUR</option>
+                <option value="USD">USD</option>
+              </select>
+              <input id="in-other-amt" class="input" type="number" step="0.01" placeholder="Amount" />
+            </div>
+            <button id="btn-add-other" class="btn">+ Add Other</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="card" id="export">
+        <h2 class="center">Utility</h2>
+        <div class="export-row">
+          <div class="kpi">
+            <div class="label">CHF → EUR</div>
+            <input id="fx-chf" class="input" type="number" step="0.0001" />
+          </div>
+          <div class="kpi">
+            <div class="label">RON → EUR</div>
+            <input id="fx-ron" class="input" type="number" step="0.0001" />
+          </div>
+          <button id="export-btn" class="btn primary">Export to CSV</button>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span>Mock data preview · You can replace inputs later to regenerate</span>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
