@@ -31,6 +31,25 @@ const clamp = (n) => Math.round(n * 100) / 100;
 // UI state
 let UI_STATE = { breakdownPeriod: 'MoM', ibkrPeriod: 'MoM', cryptoPeriod: 'MoM', cashPeriod: 'MoM' };
 
+// Persistence helpers (Electron-aware; no-op on web)
+async function loadPersisted(){
+  try {
+    if (window && window.store && typeof window.store.load === 'function'){
+      const data = await window.store.load();
+      if (data && typeof data === 'object'){
+        Object.assign(mockInput, data);
+      }
+    }
+  } catch(e){ console.warn('loadPersisted failed', e); }
+}
+async function savePersisted(){
+  try {
+    if (window && window.store && typeof window.store.save === 'function'){
+      await window.store.save(mockInput);
+    }
+  } catch(e){ console.warn('savePersisted failed', e); }
+}
+
 // Per-holding return defaults – set to 0 for all holdings and periods
 function getHoldingReturn(kind, key, period){
   return 0;
