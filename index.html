@@ -30,26 +30,24 @@
         <div class="table" id="breakdown-table"></div>
       </section>
 
-      <section class="card" id="holdings">
-        <h2 class="center">Detailed Holdings</h2>
-        <div class="two-col">
-          <div>
-            <h3 class="center">Brokerage Holdings</h3>
-            <div class="table" id="ibkr-table"></div>
-          </div>
-          <div>
-            <h3 class="center">Cryptocurrency</h3>
-            <div class="table" id="crypto-table"></div>
-            <div class="divider soft"></div>
-            <h3 class="center">Cash</h3>
-            <div class="table" id="revolut-table"></div>
-          </div>
-        </div>
-        <div class="divider soft"></div>
-        <div>
-          <h3 class="center">Other Assets</h3>
-          <div class="table" id="otherassets-table"></div>
-        </div>
+      <section class="card" id="brokerage">
+        <h2 class="center">Brokerage Holdings</h2>
+        <div class="table" id="ibkr-table"></div>
+      </section>
+
+      <section class="card" id="cash">
+        <h2 class="center">Cash</h2>
+        <div class="table" id="revolut-table"></div>
+      </section>
+
+      <section class="card" id="crypto">
+        <h2 class="center">Cryptocurrency</h2>
+        <div class="table" id="crypto-table"></div>
+      </section>
+
+      <section class="card" id="other-assets">
+        <h2 class="center">Other Assets</h2>
+        <div class="table" id="otherassets-table"></div>
       </section>
 
       <section class="card" id="info-input">
@@ -68,7 +66,7 @@
             <h3 class="center">Add Stock</h3>
             <div class="row-inputs">
               <input id="in-stock-ticker" class="input" placeholder="Ticker (e.g., AAPL)" />
-              <input id="in-stock-label" class="input" placeholder="Label (e.g., Tech)" />
+              <input id="in-stock-label" class="input" placeholder="Description (optional)" />
               <select id="in-stock-curr" class="input">
                 <option value="EUR">EUR</option>
                 <option value="USD">USD</option>
