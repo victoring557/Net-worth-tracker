@@ -158,12 +158,12 @@ function render(){
     const ronEl = document.getElementById('fx-ron');
     if (chfEl && !chfEl.dataset.bound) {
       chfEl.value = String(mockInput.fx.CHF);
-      chfEl.addEventListener('input', () => safeRender());
+      chfEl.addEventListener('input', () => { safeRender(); savePersisted(); });
       chfEl.dataset.bound = '1';
     }
     if (ronEl && !ronEl.dataset.bound) {
       ronEl.value = String(mockInput.fx.RON);
-      ronEl.addEventListener('input', () => safeRender());
+      ronEl.addEventListener('input', () => { safeRender(); savePersisted(); });
       ronEl.dataset.bound = '1';
     }
   } catch(e) { console.warn('FX inputs init failed', e); }
@@ -275,7 +275,7 @@ function render(){
           if (idx>=0){ mockInput.ibkr[idx].amount += amount; }
           else { mockInput.ibkr.push({ name, label, currency, amount }); }
           if (sTicker) sTicker.value=''; if (sAmt) sAmt.value='';
-          safeRender();
+          safeRender(); savePersisted();
         }
       });
       btnAddStock.dataset.bound='1';
@@ -295,7 +295,7 @@ function render(){
           const entry = { name:'PG', label, currency, amount };
           if (idx>=0){ mockInput.ibkr[idx].amount += amount; }
           else { mockInput.ibkr.push(entry); }
-          safeRender();
+          safeRender(); savePersisted();
         }
       });
       btnAddPG.dataset.bound='1';
@@ -316,7 +316,7 @@ function render(){
             mockInput.ibkr[idx].amount = Math.max(0, (mockInput.ibkr[idx].amount||0) - amt);
             if (mockInput.ibkr[idx].amount === 0){ mockInput.ibkr.splice(idx,1); }
             if (wTicker) wTicker.value=''; if (wAmt) wAmt.value='';
-            safeRender();
+            safeRender(); savePersisted();
           }
         }
       });
@@ -334,7 +334,7 @@ function render(){
             mockInput.ibkr[idx].amount = Math.max(0, (mockInput.ibkr[idx].amount||0) - amt);
             if (mockInput.ibkr[idx].amount === 0){ mockInput.ibkr.splice(idx,1); }
             if (pgAmtW) pgAmtW.value='';
-            safeRender();
+            safeRender(); savePersisted();
           }
         }
       });
@@ -604,6 +604,70 @@ function renderBreakdownTable(s, period){
   });
 }
 
+// Wire only the Cash inputs here (other inputs are wired in their own render blocks)
+function wireInfoInputs(){
+  try {
+    if (!mockInput.revolut) mockInput.revolut = { EUR:0, RON:0, CHF:0, USD:0 };
+    const cashEUR = document.getElementById('in-cash-eur');
+    const cashRON = document.getElementById('in-cash-ron');
+    const cashCHF = document.getElementById('in-cash-chf');
+    const btnCash = document.getElementById('btn-cash-apply');
+    if (btnCash && !btnCash.dataset.bound){
+      btnCash.addEventListener('click', () =>{
+        const addEUR = cashEUR ? (parseFloat(cashEUR.value||'0')||0) : 0;
+        const addRON = cashRON ? (parseFloat(cashRON.value||'0')||0) : 0;
+        const addCHF = cashCHF ? (parseFloat(cashCHF.value||'0')||0) : 0;
+        console.log('[Cash] Apply clicked', { addEUR, addRON, addCHF });
+        mockInput.revolut.EUR = (mockInput.revolut.EUR||0) + addEUR;
+        mockInput.revolut.RON = (mockInput.revolut.RON||0) + addRON;
+        mockInput.revolut.CHF = (mockInput.revolut.CHF||0) + addCHF;
+        if (cashEUR) cashEUR.value = '';
+        if (cashRON) cashRON.value = '';
+        if (cashCHF) cashCHF.value = '';
+        safeRender(); savePersisted();
+      });
+      btnCash.dataset.bound = '1';
+    }
+    // Enter to submit on any cash input
+    [cashEUR, cashRON, cashCHF].forEach((el)=>{
+      if (!el || el.dataset && el.dataset.bound) return;
+      el.addEventListener('keydown', (e)=>{
+        if (e.key === 'Enter' && btnCash){ btnCash.click(); }
+      });
+      el.dataset.bound = '1';
+    });
+
+    const wEUR = document.getElementById('in-cash-eur-w');
+    const wRON = document.getElementById('in-cash-ron-w');
+    const wCHF = document.getElementById('in-cash-chf-w');
+    const btnCashW = document.getElementById('btn-cash-withdraw');
+    if (btnCashW && !btnCashW.dataset.bound){
+      btnCashW.addEventListener('click', () =>{
+        const subEUR = wEUR ? (parseFloat(wEUR.value||'0')||0) : 0;
+        const subRON = wRON ? (parseFloat(wRON.value||'0')||0) : 0;
+        const subCHF = wCHF ? (parseFloat(wCHF.value||'0')||0) : 0;
+        console.log('[Cash] Withdraw clicked', { subEUR, subRON, subCHF });
+        mockInput.revolut.EUR = Math.max(0, (mockInput.revolut.EUR||0) - subEUR);
+        mockInput.revolut.RON = Math.max(0, (mockInput.revolut.RON||0) - subRON);
+        mockInput.revolut.CHF = Math.max(0, (mockInput.revolut.CHF||0) - subCHF);
+        if (wEUR) wEUR.value = '';
+        if (wRON) wRON.value = '';
+        if (wCHF) wCHF.value = '';
+        safeRender(); savePersisted();
+      });
+      btnCashW.dataset.bound = '1';
+    }
+    // Enter to submit on any withdraw cash input
+    [wEUR, wRON, wCHF].forEach((el)=>{
+      if (!el || el.dataset && el.dataset.bound) return;
+      el.addEventListener('keydown', (e)=>{
+        if (e.key === 'Enter' && btnCashW){ btnCashW.click(); }
+      });
+      el.dataset.bound = '1';
+    });
+  } catch(e){ console.warn('wireInfoInputs (cash) failed', e); }
+}
+
 /* UI helpers */
 function kpi(label, value, pos){
   const div = document.createElement('div'); div.className='kpi';
@@ -754,7 +818,7 @@ function safeRender(){
 }
 
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', safeRender);
+  document.addEventListener('DOMContentLoaded', () => { loadPersisted().then(safeRender); });
 } else {
-  safeRender();
+  loadPersisted().then(safeRender);
 }
