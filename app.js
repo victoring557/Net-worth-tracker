@@ -3,30 +3,12 @@ const mockInput = {
   date: '2025-09-01',
   fx: { USD: 0.92, CHF: 1.03, RON: 0.20 },
   cryptoPrices: { BTC: 55000, ETH: 2800 }, // EUR prices
-  revolut: { EUR: 3000, RON: 10000, CHF: 800, USD: 1200 },
-  ibkr: [
-    { name: 'VWCE.DE', label: 'Equities – Regional ETFs', currency: 'EUR', amount: 6500 },
-    { name: 'EIMI.L', label: 'Equities – Asia ETFs', currency: 'USD', amount: 2200 },
-    { name: 'AAPL', label: 'Individual Tech Stocks', currency: 'USD', amount: 3500 },
-    { name: 'XLE', label: 'Energy Stocks', currency: 'USD', amount: 2800 },
-    { name: 'XLV', label: 'Healthcare Stocks', currency: 'USD', amount: 1600 },
-    { name: 'PHO', label: 'Water ETF', currency: 'USD', amount: 1000 },
-    // P&G account (single PG stock)
-    { name: 'PG', label: 'P&G Account', currency: 'USD', amount: 500 },
-  ],
-  crypto: [ { coin: 'BTC', amount: 0.25 }, { coin: 'ETH', amount: 2.0 } ],
-  otherAssets: [
-    { name: 'Trading Card A', currency: 'USD', amount: 100 },
-    { name: 'Trading Card B', currency: 'USD', amount: 100 },
-    { name: 'Trading Card C', currency: 'USD', amount: 100 }
-  ],
-  liabilities: [ { name: 'Credit Card', currency: 'RON', amount: 2000 }, { name: 'Brokerage Margin', currency: 'USD', amount: 500 } ],
-  history: [
-    { date: '2024-09-01', netWorthEUR: 30000 }, // ~1Y ago (baseline)
-    { date: '2025-03-01', netWorthEUR: 36000 }, // ~6M ago
-    { date: '2025-06-01', netWorthEUR: 40000 }, // ~3M ago
-    { date: '2025-08-01', netWorthEUR: 40300 }, // last month
-  ],
+  revolut: { EUR: 0, RON: 0, CHF: 0, USD: 0 },
+  ibkr: [ ],
+  crypto: [ ],
+  otherAssets: [ ],
+  liabilities: [ ],
+  history: [ ],
   targets: {
     'Emergency Fund': 10,
     'Crypto': 10, // with BTC/ETH split below
@@ -48,6 +30,11 @@ const clamp = (n) => Math.round(n * 100) / 100;
 
 // UI state
 let UI_STATE = { breakdownPeriod: 'MoM', ibkrPeriod: 'MoM', cryptoPeriod: 'MoM', cashPeriod: 'MoM' };
+
+// Per-holding return defaults – set to 0 for all holdings and periods
+function getHoldingReturn(kind, key, period){
+  return 0;
+}
 
 function toEUR(amount, currency, fx){
   if(currency === 'EUR') return amount;
@@ -110,7 +97,7 @@ function compute(input){
   // Category breakdown + mapping to targets
   const breakdown = [
     { name: 'Cash & Emergency Fund', eur: revolutTotal, target: input.targets['Emergency Fund'] },
-    { name: 'Investments (IBKR)', eur: ibkrTotal, target: null },
+    { name: 'Brokerage Holdings', eur: ibkrTotal, target: null },
     { name: 'Crypto', eur: cryptoTotal, target: input.targets['Crypto'] },
     { name: 'Other Assets', eur: otherTotal, target: input.targets['Flexible / Open'] },
   ];
@@ -219,9 +206,9 @@ function render(){
     const ct = document.getElementById('crypto-table');
     if (ct){
       ct.innerHTML = '';
-      // Header with Return selector
+      // Header with Return selector (no 'Amount' column)
       const header = document.createElement('div'); header.className='row header';
-      header.append(span('','Coin'), span('','Amount'), span('','EUR Value'), span('','% of Portfolio'));
+      header.append(span('','Coin'), span('','EUR Value'), span('','% of Portfolio'));
       const h4 = document.createElement('div'); h4.className='cell';
       const lab = document.createElement('span'); lab.textContent='Return (%)'; lab.style.marginRight='8px';
       const sel = document.createElement('select'); ['MoM','3M','6M','1Y','All'].forEach(k=>{ const o=document.createElement('option'); o.value=k; o.textContent=k; sel.appendChild(o); });
@@ -234,53 +221,168 @@ function render(){
         const pos = retPct>=0;
         const retCell = document.createElement('div'); retCell.className='cell'; retCell.innerHTML = `${fmtEUR(retAbs)} (<span class="${pos? 'text-pos':'text-neg'}">${pct(retPct)}</span>)`;
         const rr = document.createElement('div'); rr.className='row';
-        rr.append(span('', c.coin), span('', c.amount.toFixed(4)), span('', fmtEUR(c.eur)), span('', pct(share)), retCell);
+        rr.append(span('', c.coin), span('', fmtEUR(c.eur)), span('', pct(share)), retCell);
         ct.appendChild(rr);
+        // Description row (full width under the coin row)
+        const descRow = document.createElement('div'); descRow.className='row';
+        const descCell = document.createElement('div'); descCell.className='cell'; descCell.style.gridColumn = '1 / -1';
+        const key = `desc:crypto:${c.coin}`;
+        const ta = document.createElement('textarea'); ta.className='input'; ta.rows = 2; ta.style.width='100%';
+        ta.placeholder = 'Description / thesis (optional)';
+        try { ta.value = localStorage.getItem(key) || ''; } catch(e) {}
+        ta.addEventListener('input', ()=>{ try { localStorage.setItem(key, ta.value); } catch(e) {} });
+        descCell.appendChild(ta);
+        descRow.appendChild(descCell);
+        ct.appendChild(descRow);
       });
     }
   } catch (e) { console.warn('Crypto table render failed', e); }
 
   // Detailed holdings – IBKR
   try {
+    const sTicker = document.getElementById('in-stock-ticker');
+    const sLabel = document.getElementById('in-stock-label');
+    const sCurr = document.getElementById('in-stock-curr');
+    const sAmt = document.getElementById('in-stock-amt');
+    const btnAddStock = document.getElementById('btn-add-stock');
+    if (btnAddStock && !btnAddStock.dataset.bound){
+      btnAddStock.addEventListener('click', ()=>{
+        const name = (sTicker && sTicker.value)||'';
+        const label = (sLabel && sLabel.value)||'Custom';
+        const currency = (sCurr && sCurr.value)||'EUR';
+        const amount = parseFloat((sAmt && sAmt.value)||'0')||0;
+        if (name && amount>0){
+          const idx = mockInput.ibkr.findIndex(p=>p.name===name);
+          if (idx>=0){ mockInput.ibkr[idx].amount += amount; }
+          else { mockInput.ibkr.push({ name, label, currency, amount }); }
+          if (sTicker) sTicker.value=''; if (sAmt) sAmt.value='';
+          safeRender();
+        }
+      });
+      btnAddStock.dataset.bound='1';
+    }
+    // P&G add form
+    const pgLabel = document.getElementById('in-pg-label');
+    const pgCurr = document.getElementById('in-pg-curr');
+    const pgAmt = document.getElementById('in-pg-amt');
+    const btnAddPG = document.getElementById('btn-add-pg');
+    if (btnAddPG && !btnAddPG.dataset.bound){
+      btnAddPG.addEventListener('click', ()=>{
+        const label = (pgLabel && pgLabel.value)||'P&G Account';
+        const currency = (pgCurr && pgCurr.value)||'USD';
+        const amount = parseFloat((pgAmt && pgAmt.value)||'0')||0;
+        if (amount>0){
+          const idx = mockInput.ibkr.findIndex(p=>p.name==='PG');
+          const entry = { name:'PG', label, currency, amount };
+          if (idx>=0){ mockInput.ibkr[idx].amount += amount; }
+          else { mockInput.ibkr.push(entry); }
+          safeRender();
+        }
+      });
+      btnAddPG.dataset.bound='1';
+    }
+    // Stock withdraw
+    const wTicker = document.getElementById('in-stock-ticker-w');
+    const wCCurr = document.getElementById('in-stock-curr-w');
+    const wAmt = document.getElementById('in-stock-amt-w');
+    const btnWStock = document.getElementById('btn-withdraw-stock');
+    if (btnWStock && !btnWStock.dataset.bound){
+      btnWStock.addEventListener('click', ()=>{
+        const name = (wTicker && wTicker.value)||'';
+        const curr = (wCCurr && wCCurr.value)||'EUR';
+        const amt = parseFloat((wAmt && wAmt.value)||'0')||0;
+        if (name && amt>0){
+          const idx = mockInput.ibkr.findIndex(p=>p.name===name && p.currency===curr);
+          if (idx>=0){
+            mockInput.ibkr[idx].amount = Math.max(0, (mockInput.ibkr[idx].amount||0) - amt);
+            if (mockInput.ibkr[idx].amount === 0){ mockInput.ibkr.splice(idx,1); }
+            if (wTicker) wTicker.value=''; if (wAmt) wAmt.value='';
+            safeRender();
+          }
+        }
+      });
+      btnWStock.dataset.bound='1';
+    }
+    // P&G withdraw
+    const pgAmtW = document.getElementById('in-pg-amt-w');
+    const btnWPG = document.getElementById('btn-withdraw-pg');
+    if (btnWPG && !btnWPG.dataset.bound){
+      btnWPG.addEventListener('click', ()=>{
+        const amt = parseFloat((pgAmtW && pgAmtW.value)||'0')||0;
+        if (amt>0){
+          const idx = mockInput.ibkr.findIndex(p=>p.name==='PG');
+          if (idx>=0){
+            mockInput.ibkr[idx].amount = Math.max(0, (mockInput.ibkr[idx].amount||0) - amt);
+            if (mockInput.ibkr[idx].amount === 0){ mockInput.ibkr.splice(idx,1); }
+            if (pgAmtW) pgAmtW.value='';
+            safeRender();
+          }
+        }
+      });
+      btnWPG.dataset.bound='1';
+    }
     const it = document.getElementById('ibkr-table');
-    if (it){
-      it.innerHTML = '';
-      // Build custom header with Return selector and IBKR/P&G split separator rows
+    const itIBKR = document.getElementById('ibkr-table-ibkr');
+    const itPG = document.getElementById('ibkr-table-pg');
+    const renderBlock = (container, rows) => {
+      container.innerHTML = '';
+      // Compute and render totals into dedicated containers above titles
+      const total = rows.reduce((s,p)=> s + p.eur, 0);
+      try {
+        if (container.id === 'ibkr-table-ibkr'){
+          // IBKR: show Total Value above the title
+          const tot = document.getElementById('ibkr-total');
+          if (tot){
+            tot.innerHTML = '';
+            const tr = document.createElement('div'); tr.className = 'row header';
+            const tc = document.createElement('div'); tc.className='cell'; tc.style.gridColumn = '1 / -1'; tc.style.textAlign='center';
+            tc.textContent = `Total Value: ${fmtEUR(total)}`; tr.appendChild(tc); tot.appendChild(tr);
+          }
+        } else if (container.id === 'ibkr-table-pg'){
+          // P&G: do not inject header into #pg-total; header will be inside the table itself
+          const place = document.getElementById('pg-total');
+          if (place) { place.innerHTML = ''; }
+        }
+      } catch(e) { /* ignore */ }
+      // Also duplicate total as first row only for IBKR table
+      if (container.id === 'ibkr-table-ibkr'){
+        const totalRow2 = document.createElement('div'); totalRow2.className='row header';
+        const totalCell2 = document.createElement('div'); totalCell2.className='cell'; totalCell2.style.gridColumn = '1 / -1'; totalCell2.style.textAlign='center';
+        totalCell2.textContent = `Total IBKR value: ${fmtEUR(total)}`;
+        totalRow2.appendChild(totalCell2);
+        container.appendChild(totalRow2);
+      }
+      // Header with selector; columns: Ticker, EUR Value, % of Portfolio, Return (%)
       const header = document.createElement('div'); header.className='row header';
-      header.append(
-        span('','Position'), span('','EUR Value'), span('','% of Portfolio')
-      );
+      header.append(span('','Ticker'), span('','EUR Value'), span('','% of Portfolio'));
       const h4 = document.createElement('div'); h4.className='cell';
       const lab = document.createElement('span'); lab.textContent='Return (%)'; lab.style.marginRight='8px';
       const sel = document.createElement('select'); ['MoM','3M','6M','1Y','All'].forEach(k=>{ const o=document.createElement('option'); o.value=k; o.textContent=k; sel.appendChild(o); });
       sel.value = UI_STATE.ibkrPeriod; sel.onchange = ()=>{ UI_STATE.ibkrPeriod = sel.value; safeRender(); };
-      h4.append(lab, sel); header.appendChild(h4); it.appendChild(header);
-      // IBKR rows (exclude PG)
-      const sep1 = document.createElement('div'); sep1.className='row header'; sep1.append(span('muted','— IBKR —'), span('','',''), span('','',''), span('','',''));
-      it.appendChild(sep1);
-      s.ibkrEUR.filter(p=>p.name!=='PG').forEach(p => {
+      h4.append(lab, sel); header.appendChild(h4); container.appendChild(header);
+      rows.forEach(p => {
         const share = s.ibkrTotal? (p.eur / s.ibkrTotal * 100) : 0;
         const retPct = getHoldingReturn('stock', p.name, UI_STATE.ibkrPeriod);
         const retAbs = p.eur * (retPct/100);
         const pos = retPct>=0;
         const retCell = document.createElement('div'); retCell.className='cell'; retCell.innerHTML = `${fmtEUR(retAbs)} (<span class="${pos? 'text-pos':'text-neg'}">${pct(retPct)}</span>)`;
         const r = document.createElement('div'); r.className='row';
-        r.append(span('',p.name), span('',fmtEUR(p.eur)), span('', pct(share)), retCell);
-        it.appendChild(r);
+        // Ticker, EUR Value, % of Portfolio
+        r.append(span('',p.name));
+        r.append(span('',fmtEUR(p.eur)));
+        r.append(span('', pct(share)));
+        // Return
+        r.append(retCell);
+        container.appendChild(r);
       });
-      // P&G rows (only PG)
-      const sep2 = document.createElement('div'); sep2.className='row header'; sep2.append(span('muted','— P&G —'), span('','',''), span('','',''), span('','',''));
-      it.appendChild(sep2);
-      s.ibkrEUR.filter(p=>p.name==='PG').forEach(p => {
-        const share = s.ibkrTotal? (p.eur / s.ibkrTotal * 100) : 0;
-        const retPct = getHoldingReturn('stock', p.name, UI_STATE.ibkrPeriod);
-        const retAbs = p.eur * (retPct/100);
-        const pos = retPct>=0;
-        const retCell = document.createElement('div'); retCell.className='cell'; retCell.innerHTML = `${fmtEUR(retAbs)} (<span class="${pos? 'text-pos':'text-neg'}">${pct(retPct)}</span>)`;
-        const r = document.createElement('div'); r.className='row';
-        r.append(span('',p.name), span('',fmtEUR(p.eur)), span('', pct(share)), retCell);
-        it.appendChild(r);
-      });
+    };
+    if (itIBKR && itPG){
+      // Split tables rendering
+      renderBlock(itIBKR, s.ibkrEUR.filter(p=>p.name!=='PG'));
+      renderBlock(itPG, s.ibkrEUR.filter(p=>p.name==='PG'));
+    } else if (it) {
+      // Fallback: single table with combined content
+      renderBlock(it, s.ibkrEUR);
     }
   } catch (e) { console.warn('IBKR table render failed', e); }
 
@@ -443,9 +545,9 @@ function render(){
 
 // Mock per-category return assumptions (percent) for each period
 const CATEGORY_RETURNS = {
-  'Cash & Emergency Fund': { MoM: 0.10, '3M': 0.30, '6M': 0.60, '1Y': 1.20, All: 2.50 },
-  'Investments (IBKR)':   { MoM: 2.10, '3M': 4.50, '6M': 7.80, '1Y': 12.30, All: 45.00 },
-  'Crypto':               { MoM: 8.00, '3M': 15.00, '6M': 30.00, '1Y': 60.00, All: 120.00 },
+  'Cash & Emergency Fund': { MoM: 0.00, '3M': 0.00, '6M': 0.00, '1Y': 0.00, All: 0.00 },
+  'Brokerage Holdings':    { MoM: 0.00, '3M': 0.00, '6M': 0.00, '1Y': 0.00, All: 0.00 },
+  'Crypto':               { MoM: 0.00, '3M': 0.00, '6M': 0.00, '1Y': 0.00, All: 0.00 },
   'Other Assets':         { MoM: 0.00, '3M': 0.00, '6M': 0.00, '1Y': 0.00, All: 0.00 },
 };
 

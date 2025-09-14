@@ -32,7 +32,13 @@
 
       <section class="card" id="brokerage">
         <h2 class="center">Brokerage Holdings</h2>
-        <div class="table" id="ibkr-table"></div>
+        <div class="table" id="ibkr-total"></div>
+        <h3 class="center large">IBKR</h3>
+        <div class="table" id="ibkr-table-ibkr"></div>
+        <div class="divider soft"></div>
+        <h3 class="center large">P&G Stock</h3>
+        <div class="table" id="pg-total"></div>
+        <div class="table" id="ibkr-table-pg"></div>
       </section>
 
       <section class="card" id="cash">
@@ -61,27 +67,74 @@
               <label>CHF <input id="in-cash-chf" class="input" type="number" step="0.01" /></label>
             </div>
             <button id="btn-cash-apply" class="btn">Apply Cash</button>
+            <div class="row-inputs">
+              <label>EUR <input id="in-cash-eur-w" class="input" type="number" step="0.01" /></label>
+              <label>RON <input id="in-cash-ron-w" class="input" type="number" step="0.01" /></label>
+              <label>CHF <input id="in-cash-chf-w" class="input" type="number" step="0.01" /></label>
+            </div>
+            <button id="btn-cash-withdraw" class="btn">Withdraw Cash</button>
           </div>
           <div class="form-group">
             <h3 class="center">Add Stock</h3>
             <div class="row-inputs">
               <input id="in-stock-ticker" class="input" placeholder="Ticker (e.g., AAPL)" />
-              <input id="in-stock-label" class="input" placeholder="Description (optional)" />
               <select id="in-stock-curr" class="input">
                 <option value="EUR">EUR</option>
                 <option value="USD">USD</option>
               </select>
-              <input id="in-stock-amt" class="input" type="number" step="0.01" placeholder="EUR Value" />
+              <input id="in-stock-amt" class="input" type="number" step="0.01" placeholder="Value" />
             </div>
             <button id="btn-add-stock" class="btn">+ Add Stock</button>
+            <div class="row-inputs">
+              <input id="in-stock-ticker-w" class="input" placeholder="Ticker (e.g., AAPL)" />
+              <select id="in-stock-curr-w" class="input">
+                <option value="EUR">EUR</option>
+                <option value="USD">USD</option>
+              </select>
+              <input id="in-stock-amt-w" class="input" type="number" step="0.01" placeholder="Value" />
+            </div>
+            <button id="btn-withdraw-stock" class="btn">- Withdraw Stock</button>
+          </div>
+          <div class="form-group">
+            <h3 class="center">Add P&G Stock</h3>
+            <div class="row-inputs">
+              <input id="in-pg-ticker" class="input" value="PG" disabled />
+              <select id="in-pg-curr" class="input">
+                <option value="USD" selected>USD</option>
+                <option value="EUR">EUR</option>
+              </select>
+              <input id="in-pg-amt" class="input" type="number" step="0.01" placeholder="Value" />
+            </div>
+            <button id="btn-add-pg" class="btn">+ Add P&G</button>
+            <div class="row-inputs">
+              <select id="in-pg-curr-w" class="input">
+                <option value="USD" selected>USD</option>
+                <option value="EUR">EUR</option>
+              </select>
+              <input id="in-pg-amt-w" class="input" type="number" step="0.01" placeholder="Value" />
+            </div>
+            <button id="btn-withdraw-pg" class="btn">- Withdraw P&G</button>
           </div>
           <div class="form-group">
             <h3 class="center">Add Crypto</h3>
             <div class="row-inputs">
               <input id="in-crypto-coin" class="input" placeholder="Coin (BTC/ETH)" />
-              <input id="in-crypto-amt" class="input" type="number" step="0.0001" placeholder="Amount" />
+              <select id="in-crypto-curr" class="input">
+                <option value="EUR" selected>EUR</option>
+                <option value="USD">USD</option>
+              </select>
+              <input id="in-crypto-val" class="input" type="number" step="0.01" placeholder="Value" />
             </div>
             <button id="btn-add-crypto" class="btn">+ Add Crypto</button>
+            <div class="row-inputs">
+              <input id="in-crypto-coin-w" class="input" placeholder="Coin (BTC/ETH)" />
+              <select id="in-crypto-curr-w" class="input">
+                <option value="EUR" selected>EUR</option>
+                <option value="USD">USD</option>
+              </select>
+              <input id="in-crypto-val-w" class="input" type="number" step="0.01" placeholder="Value" />
+            </div>
+            <button id="btn-withdraw-crypto" class="btn">- Withdraw Crypto</button>
           </div>
           <div class="form-group">
             <h3 class="center">Add Other Asset</h3>
@@ -94,6 +147,15 @@
               <input id="in-other-amt" class="input" type="number" step="0.01" placeholder="Amount" />
             </div>
             <button id="btn-add-other" class="btn">+ Add Other</button>
+            <div class="row-inputs">
+              <input id="in-other-name-w" class="input" placeholder="Name" />
+              <select id="in-other-curr-w" class="input">
+                <option value="EUR">EUR</option>
+                <option value="USD">USD</option>
+              </select>
+              <input id="in-other-amt-w" class="input" type="number" step="0.01" placeholder="Withdraw Amount" />
+            </div>
+            <button id="btn-withdraw-other" class="btn">- Withdraw Other</button>
           </div>
         </div>
       </section>
@@ -119,6 +181,6 @@
     </footer>
   </div>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=20250914"></script>
 </body>
 </html>
